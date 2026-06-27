@@ -10,46 +10,79 @@ export class RouteParser {
         const routes: RouteInfo[] = [];
         const seen = new Set<string>();
 
-        // Captura rotas Express com handler simples ou encadeado:
-        // router.get('/users', userController.getAll)
-        // router.get('/users', authenticate, userController.getAll)  ← pega o último
-        // app.post('/users', handler)
+        // 🔥 CAPTURA ROTAS EXPRESS (MELHORADO)
         const expressRegex = /(?:app|router|express)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*,([\s\S]*?)\)/g;
 
         let match;
         while ((match = expressRegex.exec(content)) !== null) {
-            const method  = match[1].toUpperCase();
-            const route   = match[2]
-            const argsPart = match[3]
+            const method = match[1].toUpperCase();
+            const route = match[2];
+            const argsPart = match[3];
 
-            // Pega o último argumento (handler real, ignorando middlewares)
-            // Ex: "authenticate, controller.getAll" → "controller.getAll"
-            const args = argsPart.split(',').map(a => a.trim()).filter(Boolean)
-            const lastArg = args[args.length - 1] || '—'
+            // 🔥 LIMPA E DIVIDE OS ARGUMENTOS
+            const args = argsPart
+                .split(',')
+                .map(a => a.trim())
+                .filter(a => a && !a.includes('=>') && !a.includes('function'));
 
-            // Remove .bind(), arrow functions, etc — pega só o nome
-            const handler = lastArg
-                .replace(/\.bind\(.*?\)/g, '')
-                .replace(/\(.*?\)/g, '')
-                .trim()
+            // 🔥 PEGA O ÚLTIMO ARGUMENTO (handler)
+            let handler = args[args.length - 1] || '—';
 
-            const key = `${method}:${route}`
-            if (seen.has(key)) continue
-            seen.add(key)
+            // 🔥 LIMPA O HANDLER
+            handler = handler
+                .replace(/\.bind\(.*?\)/g, '')      // remove .bind()
+                .replace(/\(.*?\)/g, '')            // remove parênteses extras
+                .replace(/;\s*$/, '')               // remove ; no final
+                .replace(/async\s+/g, '')           // remove async
+                .trim();
 
-            routes.push({ method, path: route, handler })
+            // 🔥 SE O HANDLER FOR UMA ARROW FUNCTION, PULA
+            if (handler.includes('=>') || handler.includes('function')) {
+                // Tenta extrair o nome da função
+                const funcMatch = handler.match(/(?:function\s+)?(\w+)\s*\(/);
+                if (funcMatch) {
+                    handler = funcMatch[1];
+                } else {
+                    continue;
+                }
+            }
+
+            // 🔥 SE O HANDLER FOR UM OBJETO (ex: UserController), pega o nome
+            if (handler.includes('.')) {
+                const parts = handler.split('.');
+                handler = parts[parts.length - 1] || handler;
+            }
+
+            const key = `${method}:${route}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            // 🔥 TENTA EXTRAIR DESCRIÇÃO DO JSDOC
+            const jsdocMatch = content.substring(0, match.index).match(/\/\*\*([\s\S]*?)\*\//);
+            let description = '';
+            if (jsdocMatch) {
+                const lines = jsdocMatch[1].split('\n').map(l => l.trim().replace(/^\*/, '').trim());
+                description = lines.filter(l => l && !l.startsWith('@')).join(' ').trim();
+            }
+
+            routes.push({
+                method,
+                path: route,
+                handler,
+                description
+            });
         }
 
-        // Captura decorators TypeScript: @Get('/path') async metodo()
+        // 🔥 DECORATORS TYPESCRIPT
         const decoratorRegex = /@(Get|Post|Put|Delete|Patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*\)\s*(?:async\s+)?(\w+)/g;
         while ((match = decoratorRegex.exec(content)) !== null) {
-            const method  = match[1].toUpperCase();
-            const route   = match[2];
+            const method = match[1].toUpperCase();
+            const route = match[2];
             const handler = match[3];
 
-            const key = `${method}:${route}`
-            if (seen.has(key)) continue
-            seen.add(key)
+            const key = `${method}:${route}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
 
             routes.push({ method, path: route, handler });
         }
