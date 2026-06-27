@@ -1,4 +1,4 @@
-# Albertool DocGen
+# Albertool DocGen | Em Manutenção
 
 Gera documentação completa do seu projeto backend com um comando só.
 
