@@ -1,4 +1,26 @@
-# Albertool DocGen | Em Manutenção
+# Albertool DocGen | TS Only
+
+---
+
+<p align="center">
+  <img src="https://img.shields.io/badge/VS%20Code-1.85.0+-blue?style=flat-square&logo=visual-studio-code"/>
+  <img src="https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square&logo=node.js"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
+  <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
+</p>
+
+---
+
+## ✨ Funcionalidades
+
+- 🚀 **Um comando só** — `Ctrl+Shift+P` → "DocGen: Gerar Toda Documentação"
+- 📁 **Estrutura organizada** — tudo na pasta `docs/`
+- 🔍 **Detecção automática** — rotas, variáveis, dependências, commits
+- 🛡️ **Análise de segurança** — baseado nas dependências do projeto
+- 📋 **Documentação completa** — controllers, services, models, repositories, middlewares, schemas
+- 🎨 **Markdown bonito** — tabelas, emojis e código formatado
+
+---
 
 Gera documentação completa do seu projeto backend com um comando só.
 
@@ -121,6 +143,3 @@ Feito de dev pra dev. Você escreve o código, a extensão documenta.
 
 ---
 
-## Licença
-
-MIT
