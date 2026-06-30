@@ -13,7 +13,7 @@
     "commands": [
       {
         "command": "docgen.gerarTudo",
-        "title": "📄 DocGen: Gerar Toda Documentação | 📄 DocGen: Generate All Documentation "
+        "title": "📄 DocGen: Generate All Documentation "
       }
     ]
   },
