@@ -7,6 +7,48 @@
 
 ---
 
+## Padrão de Documentacao Seguido:
+
+# **Assunto:** [ASSUNTO]
+
+### O que é
+[Uma frase — sem enrolação. Foco no mecanismo, não na definição de livro.]
+
+### Pra que serve
+[Problema real que esse conceito resolve — de preferência algo que você já encontrou ou vai encontrar.]
+
+### Fluxo
+```
+[entrada / dado inicial]
+        ↓
+[o que acontece / transformação]
+        ↓
+[saída / resultado / efeito]
+```
+
+### Exemplo
+```[linguagem]
+[código ou caso concreto aqui — máx 15 linhas]
+[se for economia: substitua por número, fórmula ou situação real]
+```
+
+### 🔍 Tabela mastigada
+
+| Linha / Elemento | O que faz | Pra onde vai | Conecta com | Pra que existe |
+|------------------|-----------|--------------|-------------|----------------|
+| `[linha 1]` | | | | |
+| `[linha 2]` | | | | |
+| `[linha 3]` | | | | |
+
+### 🧠 Por baixo
+```
+[antes]                    [durante]                     [depois]
+──────────────────         ──────────────────────────    ──────────────────
+[estado inicial]     →     [o que muda / processa]  →    [resultado / efeito colateral]
+``` 
+
+---
+
 <p align="center">
   <img src="https://img.shields.io/badge/VS%20Code-1.85.0+-blue?style=flat-square&logo=visual-studio-code"/>
   <img src="https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square&logo=node.js"/>
