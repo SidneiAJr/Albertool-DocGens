@@ -1,4 +1,9 @@
-# Albertool DocGen | TS Only
+#  📚 Albertool DocGen | TS Only
+> Suporte Only TS
+
+> Seguindo Padrão de Markdown que criei
+
+> PHP C# Java Somente em Atualização futura
 
 ---
 
@@ -56,34 +61,45 @@ Escaneia a `src/`, lê o `package.json`, analisa rotas, variáveis de ambiente, 
 
 ---
 
-## Exemplo de output
+## Padrão de Documentacao Seguido:
 
-**CONTROLLERS.md**
-```markdown
-## 🎯 UserController
+### **Assunto:** [ASSUNTO]
 
-| Método     | Parâmetros                        | Retorno             |
-|------------|-----------------------------------|---------------------|
-| `getAll`   | `req: Request, res: Response`     | `Promise<Response>` |
-| `register` | `req: Request, res: Response`     | `Promise<Response>` |
+### O que é
+[Uma frase — sem enrolação. Foco no mecanismo, não na definição de livro.]
+
+### Pra que serve
+[Problema real que esse conceito resolve — de preferência algo que você já encontrou ou vai encontrar.]
+
+### Fluxo
+```
+[entrada / dado inicial]
+        ↓
+[o que acontece / transformação]
+        ↓
+[saída / resultado / efeito]
 ```
 
-**ENV.md**
-```markdown
-| Variável    | Descrição                              | Obrigatória |
-|-------------|----------------------------------------|-------------|
-| `DB_HOST`   | Host do banco de dados                 | ✅          |
-| `JWT_SECRET`| Chave secreta para geração de tokens   | ✅          |
+### Exemplo
+```[linguagem]
+[código ou caso concreto aqui — máx 15 linhas]
+[se for economia: substitua por número, fórmula ou situação real]
 ```
 
-**LIBS.md**
-```markdown
-| Lib         | Versão    | Descrição                        |
-|-------------|-----------|----------------------------------|
-| `express`   | `^4.18.2` | Framework HTTP para Node.js      |
-| `typeorm`   | `^0.3.20` | ORM para TypeScript e JavaScript |
-| `zod`       | `^3.22.4` | Validação de schemas             |
+### 🔍 Tabela mastigada
+
+| Linha / Elemento | O que faz | Pra onde vai | Conecta com | Pra que existe |
+|------------------|-----------|--------------|-------------|----------------|
+| `[linha 1]` | | | | |
+| `[linha 2]` | | | | |
+| `[linha 3]` | | | | |
+
+### 🧠 Por baixo
 ```
+[antes]                    [durante]                     [depois]
+──────────────────         ──────────────────────────    ──────────────────
+[estado inicial]     →     [o que muda / processa]  →    [resultado / efeito colateral]
+``` 
 
 ---
 
