@@ -3,7 +3,7 @@
 
 > Seguindo Padrão de Markdown que criei
 
-> PHP e C# Somente em Atualização futura
+> PHP C# Java Somente em Atualização futura
 
 ---
 
