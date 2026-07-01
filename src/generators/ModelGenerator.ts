@@ -18,7 +18,79 @@ export class ModelGenerator {
             warnings.push('Campo nullable no TS mas sem `nullable: true` no decorator — banco pode rejeitar null');
         if (content.includes('any'))
             warnings.push('Tipo `any` encontrado — perde segurança de tipo no ORM');
+        if (content.includes('cascade: true') && !content.includes('onDelete'))
+            warnings.push('`cascade: true` sem `onDelete` definido — delete em cascata pode apagar dados sem querer');
         return warnings;
+    }
+
+    // ============================================
+    // 🧠 HELPERS DE DESCRIÇÃO DE LINHA
+    // ============================================
+    private describeLineAction(trimmed: string, name: string): string {
+        if (!trimmed) return 'Linha vazia';
+        if (trimmed.startsWith('import ')) return 'Importa dependência externa';
+        if (trimmed.startsWith('export class')) return `Declara a entidade \`${name}\``;
+        if (trimmed.includes('@Entity')) return 'Marca a classe como entidade do banco de dados';
+        if (trimmed.includes('@Schema')) return 'Marca a classe como schema do Mongoose';
+        if (trimmed.includes('@PrimaryGeneratedColumn')) return 'Define coluna de chave primária auto-incrementada';
+        if (trimmed.includes('@PrimaryColumn')) return 'Define coluna de chave primária manual';
+        if (trimmed.includes('@Column')) return 'Mapeia campo para coluna no banco de dados';
+        if (trimmed.includes('@Prop')) return 'Mapeia campo para propriedade no Mongoose';
+        if (trimmed.includes('@OneToMany') || trimmed.includes('@ManyToOne') ||
+            trimmed.includes('@OneToOne') || trimmed.includes('@ManyToMany'))
+            return 'Define relacionamento entre entidades';
+        if (trimmed.includes('@CreateDateColumn')) return 'Coluna preenchida automaticamente na criação';
+        if (trimmed.includes('@UpdateDateColumn')) return 'Coluna atualizada automaticamente em cada update';
+        if (trimmed.match(/get\s+\w+\s*\(/)) return 'Getter — lê propriedade calculada';
+        if (trimmed.match(/set\s+\w+\s*\(/)) return 'Setter — define propriedade com lógica';
+        if (trimmed.startsWith('@')) return 'Decorator do TypeScript/ORM';
+        if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) return 'Comentário';
+        if (trimmed === '{') return 'Abre bloco de código';
+        if (trimmed === '}') return 'Fecha bloco de código';
+        return 'Linha de código';
+    }
+
+    private describeLineDestination(trimmed: string): string {
+        if (trimmed.includes('@Entity') || trimmed.includes('@Schema')) return 'ORM / ODM';
+        if (trimmed.includes('@Column') || trimmed.includes('@Prop')) return 'Tabela / Coleção no banco';
+        if (trimmed.includes('@OneToMany') || trimmed.includes('@ManyToOne') ||
+            trimmed.includes('@OneToOne') || trimmed.includes('@ManyToMany')) return 'Entidade relacionada';
+        if (trimmed.startsWith('import ')) return 'Escopo do módulo';
+        if (trimmed.match(/get\s+\w+/)) return 'Caller / Service';
+        return '—';
+    }
+
+    private describeLineConnects(trimmed: string): string {
+        if (trimmed.startsWith('import ')) {
+            const mod = trimmed.match(/from\s+['"]([^'"]+)['"]/)?.[1];
+            return mod ? `\`${mod}\`` : '—';
+        }
+        if (trimmed.includes('@OneToMany') || trimmed.includes('@ManyToOne') ||
+            trimmed.includes('@OneToOne') || trimmed.includes('@ManyToMany')) {
+            const entity = trimmed.match(/=>\s*(\w+)/)?.[1];
+            return entity ? `\`${entity}\`` : '—';
+        }
+        if (trimmed.includes('@Column') || trimmed.includes('@Prop')) return '`banco de dados`';
+        if (trimmed.includes('@Entity')) return '`TypeORM`';
+        if (trimmed.includes('@Schema')) return '`Mongoose`';
+        return '—';
+    }
+
+    private describeLinePurpose(trimmed: string): string {
+        if (trimmed.startsWith('import ')) return 'Disponibiliza decorators e tipos externos';
+        if (trimmed.includes('@Entity')) return 'Registra a classe no ORM como tabela';
+        if (trimmed.includes('@Schema')) return 'Registra a classe no Mongoose como coleção';
+        if (trimmed.includes('@PrimaryGeneratedColumn')) return 'Garante identificador único por registro';
+        if (trimmed.includes('@Column')) return 'Persiste o campo no banco de dados';
+        if (trimmed.includes('@Prop')) return 'Persiste o campo na coleção MongoDB';
+        if (trimmed.includes('@CreateDateColumn')) return 'Rastreia quando o registro foi criado';
+        if (trimmed.includes('@UpdateDateColumn')) return 'Rastreia quando o registro foi modificado';
+        if (trimmed.includes('OneToMany') || trimmed.includes('ManyToOne') ||
+            trimmed.includes('OneToOne') || trimmed.includes('ManyToMany'))
+            return 'Modela relacionamento entre entidades no banco';
+        if (trimmed.match(/get\s+\w+/)) return 'Expõe dado calculado sem persistir';
+        if (trimmed.match(/set\s+\w+/)) return 'Transforma dado antes de armazenar';
+        return '—';
     }
 
     gerar(): string {
@@ -30,7 +102,7 @@ export class ModelGenerator {
         if (files.length === 0) {
             md += '_Nenhum model encontrado._\n\n';
             md += '### 📌 O que é um Model?\n\n';
-            md += 'Representa uma tabela/coleção no banco de dados e seus campos.\n\n';
+            md += 'Representa uma tabela/coleção no banco de dados e define seus campos e relacionamentos.\n\n';
             md += '```typescript\n';
             md += '@Entity()\n';
             md += 'export class User {\n';
@@ -52,41 +124,85 @@ export class ModelGenerator {
             const relationships = this.extractRelationships(content);
             const columns       = this.extractColumns(content);
             const warnings      = this.detectWarnings(content, fields);
+            const codeLines     = content.split('\n').map((code, i) => ({ line: i + 1, code }));
 
-            md += `## 📦 ${name}\n\n`;
-            md += `**Arquivo:** \`${path.basename(file)}\`\n\n`;
+            // ──────────────────────────────────────────────
+            // # ASSUNTO
+            // ──────────────────────────────────────────────
+            md += `# **Assunto:** ${name}\n\n`;
 
-            // Descrição do JSDoc da classe
+            // ──────────────────────────────────────────────
+            // ### O que é
+            // ──────────────────────────────────────────────
             const docMatch = content.match(/\/\*\*([\s\S]*?)\*\//);
+            let oQueE = `Entidade \`${name}\` — representa a tabela \`${decorators.table || name.toLowerCase()}\` no banco e define os campos que o ORM vai persistir.`;
             if (docMatch) {
                 const desc = docMatch[1]
                     .split('\n')
                     .map(l => l.trim().replace(/^\*/, '').trim())
                     .filter(l => l && !l.startsWith('@'))
                     .join(' ');
-                md += `### O que é\n${desc}\n\n`;
+                if (desc) oQueE = desc;
             }
+            md += `### O que é\n${oQueE}\n\n`;
 
-            // ORM e tabela
-            if (decorators.entity) {
-                md += '### Fluxo\n\n';
-                md += '```\n';
-                md += `classe ${name} → ORM: ${decorators.entity} → tabela: ${decorators.table || name.toLowerCase()}\n`;
-                md += '```\n\n';
+            // ──────────────────────────────────────────────
+            // ### Pra que serve
+            // ──────────────────────────────────────────────
+            md += `### Pra que serve\n`;
+            md += `Define o contrato entre o TypeScript e o banco — cada campo aqui vira coluna (ou campo no documento). `;
+            md += `Sem o model, o ORM não sabe o que salvar nem como mapear os dados de volta pra objeto.\n\n`;
+
+            // ──────────────────────────────────────────────
+            // ### Fluxo
+            // ──────────────────────────────────────────────
+            md += `### Fluxo\n\n`;
+            md += '```\n';
+            md += `[objeto TypeScript: ${name}]\n`;
+            md += `        ↓\n`;
+            md += `[ORM: ${decorators.entity || 'TypeORM/Mongoose'} — serializa campos decorados]\n`;
+            md += `        ↓\n`;
+            md += `[banco de dados: tabela \`${decorators.table || name.toLowerCase()}\`]\n`;
+            md += '```\n\n';
+
+            // ──────────────────────────────────────────────
+            // ### Exemplo
+            // ──────────────────────────────────────────────
+            md += `### Exemplo\n\n`;
+            md += '```typescript\n';
+            md += `// Criando e salvando um ${name} via TypeORM\n`;
+            md += `const repo = AppDataSource.getRepository(${name});\n`;
+            if (fields.length > 0) {
+                md += `const obj = repo.create({\n`;
+                for (const f of fields.slice(0, 3)) {
+                    md += `    ${f.name}: /* ${f.type} */,\n`;
+                }
+                md += `});\n`;
+            } else {
+                md += `const obj = repo.create({ /* campos aqui */ });\n`;
             }
+            md += `await repo.save(obj);\n`;
+            md += '```\n\n';
 
-            // Campos
+            // ──────────────────────────────────────────────
+            // ### 🔍 Tabela mastigada (campos)
+            // ──────────────────────────────────────────────
             if (fields.length === 0) {
                 md += '_Nenhum campo encontrado._\n\n';
             } else {
                 md += '### 🔍 Tabela mastigada\n\n';
-                md += '| Campo | Tipo TS | Coluna BD | Tipo ORM |\n';
-                md += '|-------|---------|-----------|----------|\n';
+                md += '| Campo | Tipo TS | Coluna BD | Tipo ORM | Pra que existe |\n';
+                md += '|-------|---------|-----------|----------|----------------|\n';
                 for (const field of fields) {
-                    const col    = columns[field.name] || null;
+                    const col     = columns[field.name] || null;
                     const colName = col ? col.name || field.name : field.name;
                     const ormType = col ? col.type || '—' : '—';
-                    md += `| \`${field.name}\` | \`${field.type}\` | \`${colName}\` | \`${ormType}\` |\n`;
+                    const purpose = field.name === 'id' || field.name === '_id'
+                        ? 'Chave primária — identifica o registro'
+                        : field.name.includes('At') || field.name.includes('Date')
+                            ? 'Rastreio temporal do registro'
+                            : `Dado de \`${name}\` persistido no banco`;
+                    md += `| \`${field.name}\` | \`${field.type}\` | \`${colName}\` | \`${ormType}\` | ${purpose} |\n`;
                 }
                 md += '\n';
             }
@@ -94,10 +210,17 @@ export class ModelGenerator {
             // Relacionamentos
             if (relationships.length > 0) {
                 md += '### 🔗 Relacionamentos\n\n';
-                md += '| Tipo | Campo | Entidade |\n';
-                md += '|------|-------|----------|\n';
+                md += '| Tipo | Campo | Entidade | O que significa |\n';
+                md += '|------|-------|----------|-----------------|\n';
                 for (const rel of relationships) {
-                    md += `| \`${rel.type}\` | \`${rel.field}\` | \`${rel.entity}\` |\n`;
+                    const meaning = rel.type === 'OneToMany'
+                        ? `Um \`${name}\` tem vários \`${rel.entity}\``
+                        : rel.type === 'ManyToOne'
+                            ? `Vários \`${name}\` pertencem a um \`${rel.entity}\``
+                            : rel.type === 'ManyToMany'
+                                ? `\`${name}\` e \`${rel.entity}\` se relacionam N:N`
+                                : `\`${name}\` tem exatamente um \`${rel.entity}\``;
+                    md += `| \`${rel.type}\` | \`${rel.field}\` | \`${rel.entity}\` | ${meaning} |\n`;
                 }
                 md += '\n';
             }
@@ -114,7 +237,20 @@ export class ModelGenerator {
                 md += '\n';
             }
 
-            // Armadilhas
+            // ──────────────────────────────────────────────
+            // ### 🧠 Por baixo
+            // ──────────────────────────────────────────────
+            md += '### 🧠 Por baixo\n\n';
+            md += '```\n';
+            md += `[antes]                    [durante]                          [depois]\n`;
+            md += `──────────────────         ──────────────────────────────     ──────────────────\n`;
+            md += `Objeto JS simples   →      ORM lê decorators de ${name}   →  SQL gerado e\n`;
+            md += `sem estrutura de BD        e mapeia campos para colunas        executado no banco\n`;
+            md += '```\n\n';
+
+            // ──────────────────────────────────────────────
+            // ### ⚠️ Armadilha
+            // ──────────────────────────────────────────────
             if (warnings.length > 0) {
                 md += '### ⚠️ Armadilha\n\n';
                 md += '```\n';
@@ -122,8 +258,32 @@ export class ModelGenerator {
                 md += '```\n\n';
             }
 
-            // Código fonte
-            md += '<details>\n<summary>📄 Ver código fonte</summary>\n\n';
+            // ──────────────────────────────────────────────
+            // ### 📄 Código fonte explicado
+            // ──────────────────────────────────────────────
+            md += '### 📄 Código fonte explicado\n\n';
+            md += '| Linha / Elemento | O que faz | Pra onde vai | Conecta com | Pra que existe |\n';
+            md += '|------------------|-----------|--------------|-------------|----------------|\n';
+
+            const maxLines = Math.min(20, codeLines.length);
+            for (let i = 0; i < maxLines; i++) {
+                const { line, code } = codeLines[i];
+                const trimmed = code.trim();
+                if (!trimmed) {
+                    md += `| Linha ${line} | Linha vazia | — | — | Separação visual |\n`;
+                    continue;
+                }
+                const oQFaz   = this.describeLineAction(trimmed, name);
+                const praOnde = this.describeLineDestination(trimmed);
+                const conecta = this.describeLineConnects(trimmed);
+                const praQue  = this.describeLinePurpose(trimmed);
+                const escaped = trimmed.replace(/\|/g, '\\|').slice(0, 60);
+                md += `| \`${escaped}\` | ${oQFaz} | ${praOnde} | ${conecta} | ${praQue} |\n`;
+            }
+            if (codeLines.length > 20) md += `| ... | *+${codeLines.length - 20} linhas* | — | — | — |\n`;
+            md += '\n';
+
+            md += '<details>\n<summary>📄 Ver código fonte completo</summary>\n\n';
             md += '```typescript\n' + content + '\n```\n\n';
             md += '</details>\n\n';
             md += '---\n\n';
