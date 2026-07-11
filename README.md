@@ -1,9 +1,8 @@
 #  📚 Albertool DocGen | TS Only
-> Suporte Only TS
 
 > Seguindo Padrão de Markdown que criei
 
-> PHP C# Java Somente em Atualização futura
+> ⚠️ **Suporte atual:** TypeScript only. PHP, C# e Java em breve.
 
 ---
 
