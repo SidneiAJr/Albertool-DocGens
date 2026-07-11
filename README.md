@@ -12,6 +12,16 @@
 
 ---
 
+> [!IMPORTANT]
+> **A documentação gerada por esta extensão segue um padrão criado por mim.**
+> Cada arquivo gerado usa um template próprio — O que é, Pra que serve, Fluxo, Exemplo, Tabela mastigada e Por baixo — pensado pra ser direto, sem enrolação e focado no mecanismo real do código.
+
+> [!WARNING]
+> **Suporte atual: TypeScript only.**
+> Futuramente haverá suporte para PHP, C#, Java e outras linguagens. Acompanhe as atualizações.
+
+---
+
 Escaneia a `src/`, lê o `package.json`, analisa rotas, variáveis de ambiente, segurança e commits — tudo vira markdown organizado na pasta `docs/` com um padrão consistente de documentação.
 
 ---
