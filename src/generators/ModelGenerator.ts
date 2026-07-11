@@ -9,20 +9,6 @@ export class ModelGenerator {
     // ============================================
     // 🔍 DETECTA ARMADILHAS
     // ============================================
-    private detectWarnings(content: string, fields: { name: string; type: string }[]): string[] {
-        const warnings: string[] = [];
-        if (!content.includes('@PrimaryGeneratedColumn') && !content.includes('@PrimaryColumn') && !content.includes('_id'))
-            warnings.push('Sem chave primária detectada — TypeORM/Mongoose pode rejeitar a entidade');
-        const hasNullable = fields.some(f => f.type.includes('null') || f.type.includes('undefined'));
-        if (hasNullable && !content.includes('nullable: true'))
-            warnings.push('Campo nullable no TS mas sem `nullable: true` no decorator — banco pode rejeitar null');
-        if (content.includes('any'))
-            warnings.push('Tipo `any` encontrado — perde segurança de tipo no ORM');
-        if (content.includes('cascade: true') && !content.includes('onDelete'))
-            warnings.push('`cascade: true` sem `onDelete` definido — delete em cascata pode apagar dados sem querer');
-        return warnings;
-    }
-
     // ============================================
     // 🧠 HELPERS DE DESCRIÇÃO DE LINHA
     // ============================================
@@ -123,7 +109,6 @@ export class ModelGenerator {
             const decorators    = this.extractDecorators(content);
             const relationships = this.extractRelationships(content);
             const columns       = this.extractColumns(content);
-            const warnings      = this.detectWarnings(content, fields);
             const codeLines     = content.split('\n').map((code, i) => ({ line: i + 1, code }));
 
             // ──────────────────────────────────────────────
@@ -251,13 +236,6 @@ export class ModelGenerator {
             // ──────────────────────────────────────────────
             // ### ⚠️ Armadilha
             // ──────────────────────────────────────────────
-            if (warnings.length > 0) {
-                md += '### ⚠️ Armadilha\n\n';
-                md += '```\n';
-                for (const w of warnings) md += `❌ ${w}\n`;
-                md += '```\n\n';
-            }
-
             // ──────────────────────────────────────────────
             // ### 📄 Código fonte explicado
             // ──────────────────────────────────────────────

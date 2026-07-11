@@ -11,25 +11,6 @@ export class RoutesGenerator {
     // ============================================
     // 🔍 DETECTA ARMADILHAS NAS ROTAS
     // ============================================
-    private detectWarnings(allRoutes: any[]): string[] {
-        const warnings: string[] = [];
-        const paths = allRoutes.map(r => `${r.method}:${r.path}`);
-        const duplicates = paths.filter((p, i) => paths.indexOf(p) !== i);
-        if (duplicates.length > 0)
-            warnings.push(`Rotas duplicadas detectadas: ${[...new Set(duplicates)].join(', ')}`);
-        const hasDelete = allRoutes.some(r => r.method === 'DELETE');
-        const hasAuth   = allRoutes.some(r => r.handler?.toLowerCase().includes('auth') ||
-                                              r.handler?.toLowerCase().includes('middleware'));
-        if (hasDelete && !hasAuth)
-            warnings.push('Rotas DELETE sem middleware de autenticação detectado — endpoint aberto');
-        const noId = allRoutes.filter(r =>
-            (r.method === 'PUT' || r.method === 'PATCH' || r.method === 'DELETE') &&
-            !r.path?.includes(':')
-        );
-        if (noId.length > 0)
-            warnings.push(`PUT/PATCH/DELETE sem parâmetro de id: ${noId.map(r => r.path).join(', ')}`);
-        return warnings;
-    }
 
     // ============================================
     // 🔍 DESCREVE O QUE CADA MÉTODO HTTP FAZ
@@ -95,7 +76,6 @@ export class RoutesGenerator {
             return md;
         }
 
-        const warnings = this.detectWarnings(allRoutes);
         const methodOrder = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
         const grouped: { [key: string]: any[] } = {};
@@ -193,13 +173,6 @@ export class RoutesGenerator {
         // ──────────────────────────────────────────────
         // ### ⚠️ Armadilha
         // ──────────────────────────────────────────────
-        if (warnings.length > 0) {
-            md += '### ⚠️ Armadilha\n\n';
-            md += '```\n';
-            for (const w of warnings) md += `❌ ${w}\n`;
-            md += '```\n\n';
-        }
-
         // ──────────────────────────────────────────────
         // ### 📊 Estatísticas
         // ──────────────────────────────────────────────

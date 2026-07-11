@@ -11,17 +11,6 @@ export class ControllerGenerator {
     // ============================================
     // 🔍 DETECTA ARMADILHAS
     // ============================================
-    private detectWarnings(content: string): string[] {
-        const warnings: string[] = [];
-        if (!content.includes('try') && !content.includes('catch'))
-            warnings.push('Sem `try/catch` — erros vão retornar 500 sem mensagem');
-        if (content.includes('res.json') && !content.includes('res.status'))
-            warnings.push('Sem `res.status()` explícito — sempre retorna 200, mesmo em erro');
-        if (content.includes('console.log') && !content.includes('logger'))
-            warnings.push('Usando `console.log` — prefira um logger estruturado');
-        return warnings;
-    }
-
     // ============================================
     // 🔍 DETECTA ROTAS MAPEADAS NO ARQUIVO
     // ============================================
@@ -133,7 +122,6 @@ export class ControllerGenerator {
             const methods  = this.parser.parse(content);
             const name     = path.basename(file, '.ts');
             const routes   = this.extractRoutes(content);
-            const warnings = this.detectWarnings(content);
             const codeLines = content.split('\n').map((code, i) => ({ line: i + 1, code }));
 
             // ──────────────────────────────────────────────
@@ -232,16 +220,6 @@ export class ControllerGenerator {
             md += `HTTP chega bruta    →      ${name} extrai params          →   Resposta JSON com\n`;
             md += `sem validação               e delega ao service               status HTTP correto\n`;
             md += '```\n\n';
-
-            // ──────────────────────────────────────────────
-            // ### ⚠️ Armadilha
-            // ──────────────────────────────────────────────
-            if (warnings.length > 0) {
-                md += '### ⚠️ Armadilha\n\n';
-                md += '```\n';
-                for (const w of warnings) md += `❌ ${w}\n`;
-                md += '```\n\n';
-            }
 
             // ──────────────────────────────────────────────
             // ### 📄 Código fonte explicado

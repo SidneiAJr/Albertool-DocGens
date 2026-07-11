@@ -26,22 +26,6 @@ export class MiddlewareGenerator {
     }
 
     // ============================================
-    // 🔍 DETECTA ARMADILHAS NO CÓDIGO
-    // ============================================
-    private detectWarnings(content: string): string[] {
-        const warnings: string[] = [];
-        if (!content.includes('next(') && !content.includes('res.status'))
-            warnings.push('`next()` não chamado — requisição pode ficar travada');
-        if (!content.includes('try') && !content.includes('catch'))
-            warnings.push('Sem `try/catch` — erros não tratados vão quebrar o servidor');
-        if (content.includes('console.log') && !content.includes('logger'))
-            warnings.push('Usando `console.log` direto — prefira um logger (winston, pino)');
-        if (content.includes('next(err)') && !content.includes('ErrorRequestHandler'))
-            warnings.push('`next(err)` chamado mas sem handler de erro registrado — erro vai sumir silenciosamente');
-        return warnings;
-    }
-
-    // ============================================
     // 🧠 HELPERS DE DESCRIÇÃO DE LINHA
     // ============================================
     private describeLineAction(trimmed: string, name: string, type: string): string {
@@ -153,7 +137,6 @@ export class MiddlewareGenerator {
             const name      = path.basename(file, '.ts');
             const methods   = this.parser.parse(content);
             const type      = this.detectType(content);
-            const warnings  = this.detectWarnings(content);
             const codeLines = content.split('\n').map((code, i) => ({ line: i + 1, code }));
 
             // ──────────────────────────────────────────────
@@ -252,13 +235,7 @@ export class MiddlewareGenerator {
 
             // ──────────────────────────────────────────────
             // ### ⚠️ Armadilha
-            // ──────────────────────────────────────────────
-            if (warnings.length > 0) {
-                md += '### ⚠️ Armadilha\n\n';
-                md += '```\n';
-                for (const w of warnings) md += `❌ ${w}\n`;
-                md += '```\n\n';
-            }
+            // ─────────────────────────────────────────────
 
             // ──────────────────────────────────────────────
             // ### 📄 Código fonte explicado

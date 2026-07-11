@@ -11,19 +11,7 @@ export class RepositoryGenerator {
     // ============================================
     // 🔍 DETECTA ARMADILHAS
     // ============================================
-    private detectWarnings(content: string): string[] {
-        const warnings: string[] = [];
-        if (!content.includes('try') && !content.includes('catch'))
-            warnings.push('Sem `try/catch` — erro no banco vai estourar sem tratamento');
-        if (content.includes('console.log') && !content.includes('logger'))
-            warnings.push('Usando `console.log` — prefira um logger estruturado');
-        if (content.includes('DELETE') && !content.includes('WHERE'))
-            warnings.push('`DELETE` sem `WHERE` detectado — pode apagar a tabela inteira');
-        if (content.includes('findOne') && !content.includes('throw') && !content.includes('null'))
-            warnings.push('`findOne` sem verificação de null — pode propagar `undefined` pro controller');
-        return warnings;
-    }
-
+  
     // ============================================
     // 🔍 DETECTA O TIPO DE REPOSITORY
     // ============================================
@@ -153,7 +141,6 @@ export class RepositoryGenerator {
             const entity     = this.extractEntity(content);
             const queries    = this.extractQueries(content);
             const ormMethods = this.extractOrmMethods(content);
-            const warnings   = this.detectWarnings(content);
             const codeLines  = content.split('\n').map((code, i) => ({ line: i + 1, code }));
 
             // ──────────────────────────────────────────────
@@ -274,15 +261,6 @@ export class RepositoryGenerator {
             md += `sem saber do banco          e executa via ${repoType.padEnd(12)}     vira objeto \`${entity}\`\n`;
             md += '```\n\n';
 
-            // ──────────────────────────────────────────────
-            // ### ⚠️ Armadilha
-            // ──────────────────────────────────────────────
-            if (warnings.length > 0) {
-                md += '### ⚠️ Armadilha\n\n';
-                md += '```\n';
-                for (const w of warnings) md += `❌ ${w}\n`;
-                md += '```\n\n';
-            }
 
             // ──────────────────────────────────────────────
             // ### 📄 Código fonte explicado
